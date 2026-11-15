@@ -48,25 +48,41 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+
 const poet = ref(null)
 const error = ref('')
 const loading = ref(true)
 const stuId = '2529425'
 
-onMounted(() => {
+// GitHub Pages 只托管静态文件，没有 Node 后端，线上访问 /api/data 必然 404。
+// 所以优先读随构建一起上线的静态快照 public/data.json（npm run data 生成），
+// 本地 npm run dev 且还没有快照时，再回退到 vite 代理的 /api。
+const loadSnapshot = () =>
+  fetch(`${import.meta.env.BASE_URL}data.json`, { cache: 'no-cache' }).then(res => {
+    if (!res.ok) throw new Error(`data.json ${res.status}`)
+    return res.json()
+  })
+
+const loadApi = () =>
   fetch(`/api/data?id=${stuId}`)
-    .then(res => res.text())
-    .then(text => {
-      loading.value = false
-      try {
-        poet.value = JSON.parse(text)
-      } catch (e) {
-        error.value = text
-      }
+    .then(res => {
+      if (!res.ok) throw new Error(`api ${res.status}`)
+      return res.text()
     })
-    .catch(() => {
+    .then(text => JSON.parse(text))
+
+onMounted(() => {
+  loadSnapshot()
+    .catch(() => loadApi())
+    .then(data => {
+      poet.value = data
+    })
+    .catch(err => {
+      console.error('[poet-page] 诗人数据加载失败', err)
+      error.value = '诗人数据加载失败，请稍后刷新重试。'
+    })
+    .finally(() => {
       loading.value = false
-      error.value = '网络请求失败'
     })
 })
 </script>

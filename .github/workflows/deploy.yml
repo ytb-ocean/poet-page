@@ -22,6 +22,10 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      # 尽量抓一份最新的诗人数据；失败就用仓库里的 public/data.json 快照，不阻塞部署
+      - name: Refresh poet data
+        continue-on-error: true
+        run: node scripts/fetch-data.mjs
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
