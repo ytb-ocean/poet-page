@@ -1,7 +1,144 @@
+<template>
+  <div class="container">
+    <div v-if="loading" class="tip">正在加载诗人数据...</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else-if="poet">
+      <h1 class="title">{{ poet.Title }}</h1>
+      <div class="card-header">
+        <img :src="poet.Intro.portraitData" alt="诗人头像" class="avatar">
+        <div>
+          <h2>{{ poet.Header.name }}</h2>
+          <p class="sub">{{ poet.Header.subtitle }}</p>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>简介</h3>
+        <p>{{ poet.Intro.description }}</p>
+        <div class="fact-list">
+          <span v-for="item in poet.Intro.facts" :key="item.keyword" class="fact-item">
+            {{ item.keyword }}：{{ item.value }}
+          </span>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>生平大事</h3>
+        <div v-for="item in poet.Timeline" :key="item.time" class="time-item">
+          <span class="time">{{ item.time }}</span>：{{ item.action }}
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>代表作品</h3>
+        <div v-for="item in poet.Poems" :key="item.title" class="poem-item">
+          《{{ item.title }}》：{{ item.line }}
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>名句摘录</h3>
+        <div v-for="sentence in poet.Quotes" :key="sentence" class="quote">
+          {{ sentence }}
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { ref, onMounted } from 'vue'
+const poet = ref(null)
+const error = ref('')
+const loading = ref(true)
+const stuId = '2529425'
+
+onMounted(() => {
+  fetch(`/api/data?id=${stuId}`)
+    .then(res => res.text())
+    .then(text => {
+      loading.value = false
+      try {
+        poet.value = JSON.parse(text)
+      } catch (e) {
+        error.value = text
+      }
+    })
+    .catch(() => {
+      loading.value = false
+      error.value = '网络请求失败'
+    })
+})
 </script>
 
-<template>
-  <HelloWorld />
-</template>
+<style scoped>
+.container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 20px;
+  font-family: "Microsoft Yahei", sans-serif;
+}
+.tip, .error {
+  text-align: center;
+  font-size: 18px;
+  margin-top: 40px;
+}
+.error {
+  color: #d33;
+}
+.title {
+  text-align: center;
+  color: #2c3e50;
+}
+.card-header {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin: 30px 0;
+}
+.avatar {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #ccc;
+}
+.sub {
+  color: #666;
+}
+.block {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+h3 {
+  border-left: 4px solid #3498db;
+  padding-left: 10px;
+  color: #2c3e50;
+}
+.fact-list {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fact-item {
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.time-item, .poem-item {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+.time {
+  font-weight: bold;
+  color: #2980b9;
+}
+.quote {
+  margin: 10px 0;
+  font-style: italic;
+  color: #8e44ad;
+}
+</style>
